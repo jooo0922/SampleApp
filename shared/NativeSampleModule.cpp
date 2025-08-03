@@ -13,6 +13,7 @@ namespace facebook::react {
 ANativeWindow *nativeWindow = nullptr; // Android Surface를 저장할 전역 변수
 std::atomic<bool> isRendering = false; // 렌더링 루프 상태
 std::thread renderThread; // 렌더링 루프를 실행할 스레드
+SkImageInfo imageInfo = SkImageInfo::MakeN32Premul(0, 0); // skia 내부에서 렌더링할 이미지(framebuffer)의 크기, color type 등 메타데이터를 담는 객체
 
 NativeSampleModule::NativeSampleModule(std::shared_ptr<CallInvoker> jsInvoker)
     : NativeSampleModuleCxxSpec(std::move(jsInvoker)) {}
@@ -26,15 +27,21 @@ void NativeSampleModule::initSurface(ANativeWindow *window) {
   nativeWindow = window;
 
   if (nativeWindow) {
-    // skia 내부 framebuffer 구성 정보(해상도, pixel format)에 적용하기 위해 지정
-    ANativeWindow_setBuffersGeometry(nativeWindow, 800, 600, WINDOW_FORMAT_RGBA_8888);
-
     // 렌더링 루프 시작
     isRendering = true;
     // 렌더링 루프는 별도의 렌더링 스레드 생성하여 돌린다. (ui 스레드와 별개로 돌아가도록 하여 오버헤드를 줄이려는 목적)
     renderThread = std::thread([this]() { renderLoop(); });
   };
 }
+
+void NativeSampleModule::changeSurface(ANativeWindow *window, int width, int height) {
+  // skia 내부 framebuffer 에 적용할 이미지 크기(메타데이터) 업데이트
+  imageInfo = SkImageInfo::MakeN32Premul(width, height);
+  if (nativeWindow) {
+    // android surface 설정(해상도, pixel format)
+    ANativeWindow_setBuffersGeometry(nativeWindow, width, height, WINDOW_FORMAT_RGBA_8888);
+  }
+};
 
 void NativeSampleModule::destroySurface() {
   if (renderThread.joinable()) {
@@ -48,11 +55,7 @@ void NativeSampleModule::destroySurface() {
 };
 
 void NativeSampleModule::renderLoop() {
-  // 이미지 정보 생성
-  SkImageInfo imageInfo = SkImageInfo::MakeN32Premul(800, 600);
-
   // TODO : SkSurfaces::Raster() 는 cpu 기반이라 Graphics Backend 를 사용하지 않는다고 함. gpu 렌더링 기반으로 예제 수정 필요.
-  // TODO : third_party/skia/android/[architecture]/gen/... 디렉토리 제거하고 정상 빌드되는지 테스트
   auto skiaSurface = SkSurfaces::Raster(imageInfo);
   if (!skiaSurface) {
     return;
@@ -64,11 +67,15 @@ void NativeSampleModule::renderLoop() {
   while (isRendering)
   {
     // 캔버스 초기화
-    canvas->clear(SK_ColorWHITE);
+    canvas->clear(SK_ColorLTGRAY);
 
-    // 캔버스 중항으로 이동 및 회전 적용
+    // 변환 적용 전 캔버스 상태 저장
     canvas->save();
-    canvas->translate(400.0f, 300.0f);
+
+    // 캔버스 상태 변환
+    float_t cx = static_cast<float_t>(imageInfo.dimensions().width() * 0.5f);
+    float_t cy = static_cast<float_t>(imageInfo.dimensions().height() * 0.5f);
+    canvas->translate(cx, cy);
     canvas->rotate(rotation);
 
     // 출력 색상 및 antialiasing 상태 설정
@@ -77,10 +84,14 @@ void NativeSampleModule::renderLoop() {
     paint.setAntiAlias(true);
 
     // 100*100 사각형 draw call
-    SkRect rect = SkRect::MakeXYWH(-50.0f, -50.0f, 100.0f, 100.0f);
+    float_t rect_width = 100.0f;
+    float_t rect_height = 100.0f;
+    float_t rect_offset_x = -(rect_width * 0.5f);
+    float_t rect_offset_y = -(rect_height * 0.5f);
+    SkRect rect = SkRect::MakeXYWH(rect_offset_x, rect_offset_y, rect_width, rect_height);
     canvas->drawRect(rect, paint);
 
-    // canvas 상태 원복
+    // 변환 적용 전 상태로 캔버스 복원
     canvas->restore();
 
     // 회전 각도 업데이트 -> [0.0f, 360.0f] 각도 구간 반복
@@ -113,15 +124,20 @@ void NativeSampleModule::renderLoop() {
 } // namespace facebook::react
 
 // JNI 함수 정의
-extern "C" JNIEXPORT void JNICALL Java_com_sampleapp_SkiaView_nativeInitSurface(
-    JNIEnv *env, jobject, jobject surface) {
+extern "C" JNIEXPORT void JNICALL Java_com_sampleapp_SkiaView_nativeInitSurface(JNIEnv *env, jobject, jobject surface) {
   ANativeWindow *window = ANativeWindow_fromSurface(env, surface);
   auto module = std::make_shared<facebook::react::NativeSampleModule>(nullptr);
   module->initSurface(window);
 }
 
-extern "C" JNIEXPORT void JNICALL
-Java_com_sampleapp_SkiaView_nativeDestroySurface(JNIEnv *, jobject) {
+extern "C" JNIEXPORT void JNICALL Java_com_sampleapp_SkiaView_nativeChangeSurface(JNIEnv *env, jobject, jobject surface, jint width, jint height) {
+  ANativeWindow *window = ANativeWindow_fromSurface(env, surface);
+  auto module = std::make_shared<facebook::react::NativeSampleModule>(nullptr);
+  module->changeSurface(window, width, height);
+}
+
+
+extern "C" JNIEXPORT void JNICALL Java_com_sampleapp_SkiaView_nativeDestroySurface(JNIEnv *, jobject) {
   auto module = std::make_shared<facebook::react::NativeSampleModule>(nullptr);
   module->destroySurface();
 }

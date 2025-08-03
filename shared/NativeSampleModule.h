@@ -14,11 +14,15 @@ public:
 
   std::string reverseString(jsi::Runtime &rt, std::string input);
 
-  // Surface 초기화 및 파괴 함수
+  // android surface 초기화
   void initSurface(ANativeWindow *window);
+  // android surface 크기 변경
+  void changeSurface(ANativeWindow *window, int width, int height);
+  // android surface 제거
   void destroySurface();
 
 protected:
+  // skia 렌더링 루프
   void renderLoop();
 };
 
