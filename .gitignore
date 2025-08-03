@@ -72,3 +72,6 @@ yarn-error.log
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+
+# 3rd party libs
+third_party/**/*.a
