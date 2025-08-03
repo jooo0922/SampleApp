@@ -17,6 +17,7 @@ class SkiaView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
 
     override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
         // Surface 크기 변경 처리 (필요 시)
+        nativeChangeSurface(holder.surface, width, height)
     }
 
     override fun surfaceDestroyed(holder: SurfaceHolder) {
@@ -26,5 +27,6 @@ class SkiaView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
 
     // JNI를 통해 C++ 함수 호출
     private external fun nativeInitSurface(surface: Surface)
+    private external fun nativeChangeSurface(surface: Surface, width: Int, height: Int)
     private external fun nativeDestroySurface()
 }
