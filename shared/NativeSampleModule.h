@@ -17,9 +17,19 @@ public:
   // android surface 초기화
   void initSurface(ANativeWindow *window);
   // android surface 크기 변경
-  void changeSurface(ANativeWindow *window, int width, int height);
+  void changeSurface(int width, int height);
   // android surface 제거
   void destroySurface();
+
+protected:
+  // egl 초기화
+  bool initEGL();
+  // egl 리소스 해제
+  void destroyEGL();
+
+protected:
+  // ganesh gpu 백엔드 기반 SkSurface 생성 함수
+  bool setupSkiaSurface();
 
 protected:
   // skia 렌더링 루프
