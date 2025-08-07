@@ -12,6 +12,8 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE ../../../../../shared/NativeSampleM
 # Search for Android system libs
 find_library(log-lib log)
 find_library(android-lib android)
+find_library(egl-lib EGL)
+find_library(glesv2-lib GLESv2)
 
 # Add Skia library and include paths
 set(SKIA_ROOT ${CMAKE_SOURCE_DIR}/../../../../../third_party/skia)
@@ -45,4 +47,6 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
   ${SKIA_LIB}
   ${log-lib}
   ${android-lib}
+  ${egl-lib}
+  ${glesv2-lib}
 )
