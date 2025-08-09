@@ -84,12 +84,6 @@ void NativeSampleModule::renderLoop() {
     return;
   }
 
-  // initEGL() 함수에서 생성된 EGLContext 를 렌더링 스레드에 바인딩하여 skia ganesh 백엔드가 사용할 수 있도록 함.
-  if (!eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext)) {
-    __android_log_print(ANDROID_LOG_ERROR, "NativeSampleModule", "Failed to bind EGL context in render thread");
-    return;
-  }
-
   // ganesh gpu 백엔드 기반 SkSurface 생성
   if (!setupSkiaSurface()) {
     __android_log_print(ANDROID_LOG_ERROR, "NativeSampleModule", "Failed to setup Skia surface");
@@ -212,7 +206,7 @@ bool NativeSampleModule::initEGL() {
 
   // EGLContext 생성
   EGLint contextAttribs[] = {
-    EGL_CONTEXT_CLIENT_VERSION, 2,
+    EGL_CONTEXT_CLIENT_VERSION, 3,
     EGL_NONE
   };
   eglContext = eglCreateContext(eglDisplay, eglConfig, EGL_NO_CONTEXT, contextAttribs);
