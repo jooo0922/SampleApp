@@ -7,7 +7,14 @@ project(appmodules)
 include(${REACT_ANDROID_DIR}/cmake-utils/ReactNative-application.cmake)
 
 # Define where the additional source code lives. We need to crawl back the jni, main, src, app, android folders
-target_sources(${CMAKE_PROJECT_NAME} PRIVATE ../../../../../shared/NativeSampleModule.cpp)
+set(SHARED_ROOT ${CMAKE_SOURCE_DIR}/../../../../../shared)
+target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+  ${SHARED_ROOT}/NativeSampleModule.cpp
+  ${SHARED_ROOT}/render/Renderer.cpp
+  ${SHARED_ROOT}/render/EglContext.cpp
+  ${SHARED_ROOT}/render/SkiaGanesh.cpp
+  ${SHARED_ROOT}/drawables/RotatingRect.cpp
+)
 
 # Search for Android system libs
 find_library(log-lib log)
@@ -38,7 +45,9 @@ endif()
 # Define where CMake can find the additional header files. We need to crawl back the jni, main, src, app, android folders
 # Include Skia headers
 target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
-  ../../../../../shared
+  ${SHARED_ROOT}
+  ${SHARED_ROOT}/render
+  ${SHARED_ROOT}/drawables
   ${SKIA_INCLUDE_DIR}
 )
 
