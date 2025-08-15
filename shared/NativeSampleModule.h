@@ -1,9 +1,10 @@
 #pragma once
 
 #include <AppSpecsJSI.h>
-#include <android/native_window.h> // ANativeWindow
 #include <memory>
 #include <string>
+#include <android/native_window.h> // ANativeWindow
+#include "render/Renderer.h"
 
 namespace facebook::react {
 
@@ -21,19 +22,8 @@ public:
   // android surface 제거
   void destroySurface();
 
-protected:
-  // egl 초기화
-  bool initEGL();
-  // egl 리소스 해제
-  void destroyEGL();
-
-protected:
-  // ganesh gpu 백엔드 기반 SkSurface 생성 함수
-  bool setupSkiaSurface();
-
-protected:
-  // skia 렌더링 루프
-  void renderLoop();
+private:
+  std::shared_ptr<Renderer> m_pRenderer;
 };
 
 } // namespace facebook::react
