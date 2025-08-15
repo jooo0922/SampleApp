@@ -24,6 +24,7 @@ public:
 
 private:
   std::shared_ptr<Renderer> m_pRenderer;
+  bool m_bStarted = false;
 };
 
 } // namespace facebook::react

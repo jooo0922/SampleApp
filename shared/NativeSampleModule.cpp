@@ -15,6 +15,9 @@ std::string NativeSampleModule::reverseString(jsi::Runtime &rt,
 }
 
 void NativeSampleModule::initSurface(ANativeWindow *window) {
+  if (!window) return;
+  if (m_bStarted) return; // double init 방지
+
   // renderer nullptr check
   if (!m_pRenderer) {
     m_pRenderer = std::make_shared<Renderer>();
@@ -22,27 +25,30 @@ void NativeSampleModule::initSurface(ANativeWindow *window) {
 
   /** drawable 객체 생성 및 추가 */
   // 회전 사각형 생성
-  auto rect = std::make_shared<RotatingRect>();
-  rect->setSize(100.0f, 100.0f);
-  rect->setSpeed(120.0f);
-  rect->setColor(SK_ColorRED);
-  m_pRenderer->addDrawable(rect);
+  auto pRect = std::make_shared<RotatingRect>();
+  pRect->setSize(100.0f, 100.0f);
+  pRect->setSpeed(120.0f);
+  pRect->setColor(SK_ColorRED);
+  m_pRenderer->addDrawable(pRect);
 
   // renderer 초기화
   m_pRenderer->start(window);
+  m_bStarted = true;
 }
 
 void NativeSampleModule::changeSurface(int width, int height) {
-  if (m_pRenderer) {
+  if (m_bStarted && m_pRenderer) {
     m_pRenderer->resize(width, height);
   }
 };
 
 void NativeSampleModule::destroySurface() {
+  if (!m_bStarted) return; // 초기화도 안된 상태에서 메모리 해제 시도 방지
   if (m_pRenderer) {
     m_pRenderer->clearDrawables();
     m_pRenderer->stop();
   }
+  m_bStarted = false;
 };
 
 } // namespace facebook::react
