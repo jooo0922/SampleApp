@@ -67,6 +67,7 @@
     "__mutex_base": "cpp",
     "atomic": "cpp",
     "exception": "cpp",
-    "system_error": "cpp"
+    "system_error": "cpp",
+    "regex": "cpp"
   }
 }
