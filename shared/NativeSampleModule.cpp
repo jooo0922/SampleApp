@@ -14,6 +14,14 @@ std::string NativeSampleModule::reverseString(jsi::Runtime &rt,
   return std::string(input.rbegin(), input.rend());
 }
 
+void NativeSampleModule::startDecoding(jsi::Runtime &rt, const std::string& filePath) {
+
+};
+
+void NativeSampleModule::stopDecoding(jsi::Runtime &rt) {
+
+};
+
 void NativeSampleModule::initSurface(ANativeWindow *window) {
   if (!window) return;
   if (m_bStarted) return; // double init 방지

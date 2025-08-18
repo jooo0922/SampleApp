@@ -14,7 +14,10 @@ public:
   NativeSampleModule(std::shared_ptr<CallInvoker> jsInvoker);
 
   std::string reverseString(jsi::Runtime &rt, std::string input);
+  void startDecoding(jsi::Runtime &rt, const std::string& filePath);
+  void stopDecoding(jsi::Runtime &rt);
 
+public:
   // android surface 초기화
   void initSurface(ANativeWindow *window);
   // android surface 크기 변경
