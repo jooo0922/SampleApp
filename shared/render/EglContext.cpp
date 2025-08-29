@@ -84,3 +84,17 @@ void EglContext::destroy() {
     m_display = EGL_NO_DISPLAY;
   }
 };
+
+bool EglContext::isEGLContextCurrent() {
+  EGLDisplay curDisplay = eglGetCurrentDisplay();
+  EGLContext curContext = eglGetCurrentContext();
+
+  if (curDisplay == EGL_NO_DISPLAY || curContext == EGL_NO_CONTEXT) {
+    return false;
+  }
+  if (m_context != EGL_NO_CONTEXT && curContext != m_context) {
+    return false;
+  }
+
+  return true;
+};

@@ -25,6 +25,10 @@ public:
   // skia 렌더링 객체 전부 제거
   void clearDrawables();
 
+public:
+  // 현재 스레드에 EGLContext 바인딩 보장용 Assertion
+  void assertEGLContextCurrent() const;
+
 private:
   void process();
 

@@ -17,6 +17,10 @@ public:
   EGLContext context() const { return m_context; };
   EGLSurface surface() const { return m_surface; };
 
+public:
+  // 현재 스레드에서 바인딩된 EGLContext 확인
+  bool isEGLContextCurrent();
+
 private:
   // egl 설정 관련 전역 변수
   EGLDisplay m_display = EGL_NO_DISPLAY;

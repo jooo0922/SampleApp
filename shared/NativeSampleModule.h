@@ -25,9 +25,14 @@ public:
   // android surface 제거
   void destroySurface();
 
+public:
+  // OES 텍스쳐 생성 및 반환
+  GLuint createOESTexture();
+
 private:
   std::shared_ptr<Renderer> m_pRenderer;
   bool m_bStarted = false;
+  GLuint m_oesTex = 0; // GL_TEXTURE_EXTERNAL_OES
 };
 
 } // namespace facebook::react

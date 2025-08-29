@@ -1,6 +1,7 @@
 #include "Renderer.h"
 #include <android/log.h>  // 로그 출력을 위한 헤더
 #include <chrono>
+#include <cassert>
 
 void Renderer::start(ANativeWindow* pWindow) {
   m_pNativeWindow = pWindow;
@@ -46,6 +47,18 @@ void Renderer::addDrawable(std::shared_ptr<IDrawable> drawable) {
 void Renderer::clearDrawables() {
   std::lock_guard<std::mutex> lock(m_drawablesMtx);
   m_drawables.clear();
+};
+
+void Renderer::assertEGLContextCurrent() const {
+#ifdef NDEBUG
+  // Release Build
+#else
+  // Debug Build
+  if (!m_egl.isEGLContextCurrent()) {
+    __android_log_print(ANDROID_LOG_ERROR, "NativeSampleModule", "EGLContext not bound on this thread or wrong context bound");
+    assert(false && "EGL context is not current or mismatched");
+  }
+#endif
 };
 
 void Renderer::process() {

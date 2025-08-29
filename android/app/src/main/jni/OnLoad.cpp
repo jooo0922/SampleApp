@@ -116,7 +116,11 @@ javaModuleProvider(const std::string &name,
 
 } // namespace facebook::react
 
+extern JavaVM* g_vm;
+
 JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *) {
+  g_vm = vm; // 전역 보관
+
   return facebook::jni::initialize(vm, [] {
     facebook::react::DefaultTurboModuleManagerDelegate::cxxModuleProvider =
         &facebook::react::cxxModuleProvider;

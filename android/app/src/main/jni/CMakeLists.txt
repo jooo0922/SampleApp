@@ -14,6 +14,8 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
   ${SHARED_ROOT}/render/EglContext.cpp
   ${SHARED_ROOT}/render/SkiaGanesh.cpp
   ${SHARED_ROOT}/drawables/RotatingRect.cpp
+  ${SHARED_ROOT}/drawables/VideoRect.cpp
+  ${SHARED_ROOT}/video/VideoPlayerAndroid.cpp
 )
 
 # Search for Android system libs
@@ -48,6 +50,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
   ${SHARED_ROOT}
   ${SHARED_ROOT}/render
   ${SHARED_ROOT}/drawables
+  ${SHARED_ROOT}/video
   ${SKIA_INCLUDE_DIR}
 )
 

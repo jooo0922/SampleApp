@@ -1,6 +1,7 @@
 #include "NativeSampleModule.h"
 #include "drawables/RotatingRect.h"
 #include <android/native_window_jni.h> // ANativeWindow_fromSurface, ANativeWindow_release
+#include <GLES2/gl2ext.h>
 
 namespace facebook::react {
 
@@ -59,9 +60,23 @@ void NativeSampleModule::destroySurface() {
   m_bStarted = false;
 };
 
+GLuint NativeSampleModule::createOESTexture() {
+  m_pRenderer->assertEGLContextCurrent();
+  if (m_oesTex == 0) {
+    glGenTextures(1, &m_oesTex);
+    glBindTexture(GL_TEXTURE_EXTERNAL_OES, m_oesTex);
+    glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  }
+  return m_oesTex;
+};
+
 } // namespace facebook::react
 
-// JNI 함수 정의
+/** JNI 함수 정의 */
+// ====== SurfaceView.kt JNI 구현 ======
 extern "C" JNIEXPORT void JNICALL Java_com_sampleapp_SkiaView_nativeInitSurface(JNIEnv *env, jobject, jobject surface) {
   ANativeWindow *window = ANativeWindow_fromSurface(env, surface);
   if (!facebook::react::gModule) {
@@ -82,3 +97,15 @@ extern "C" JNIEXPORT void JNICALL Java_com_sampleapp_SkiaView_nativeDestroySurfa
     facebook::react::gModule->destroySurface();
   }
 }
+
+// ====== VideoSurfaceHelper.kt JNI 구현 ======
+extern "C" JNIEXPORT jint JNICALL Java_com_sampleapp_video_VideoSurfaceHelper_nativeCreateOESTexture(JNIEnv*, jclass) {
+  if (!facebook::react::gModule) {
+    facebook::react::gModule = std::make_shared<facebook::react::NativeSampleModule>(nullptr);
+  }
+  return static_cast<jint>(facebook::react::gModule->createOESTexture());
+};
+
+extern "C" JNIEXPORT void JNICALL Java_com_sampleapp_video_VideoSurfaceHelper_nativeOnVideoFrameAvailable(JNIEnv*, jclass) {
+  // TODO : IVideoPlayer::notifyFrame() 호출 -> SurfaceTexture 에 디코딩된 프레임 데이터가 업데이트 되었다는 신호를 렌더링 스레드에 전달
+};
