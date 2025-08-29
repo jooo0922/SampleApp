@@ -1,6 +1,5 @@
 #include "SkiaGanesh.h"
 #include <android/log.h>  // 로그 출력을 위한 헤더
-#include <GLES3/gl3.h> // OpenGL ES 3.0 API 사용
 
 /**
  * GrDirectContext 및 SkSurface 생성 함수.

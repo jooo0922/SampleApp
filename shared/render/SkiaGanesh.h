@@ -7,6 +7,7 @@
 #include <gpu/ganesh/gl/GrGLBackendSurface.h>
 #include <gpu/ganesh/gl/GrGLDirectContext.h>
 #include <gpu/ganesh/gl/GrGLInterface.h>
+#include <GLES3/gl3.h> // OpenGL ES 3.0 API 사용
 
 class SkiaGanesh
 {
