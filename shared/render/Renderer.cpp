@@ -28,6 +28,9 @@ void Renderer::resize(int width, int height) {
 };
 
 void Renderer::stop() {
+  // 렌더링 루프 플래그 비활성화
+  m_bIsRendering = false;
+
   if (m_renderThread.joinable()) {
     m_renderThread.join();
   }
@@ -48,10 +51,31 @@ void Renderer::clearDrawables() {
   m_drawables.clear();
 };
 
+void Renderer::setTimeline(std::shared_ptr<Timeline> tl) {
+  // mutex lock 으로 임계영역을 잠근 후 m_timeline 업데이트
+  std::lock_guard<std::mutex> lock(m_timelineMtx);
+  m_timeline = std::move(tl);
+  m_previewTimeSec = 0.0;
+  m_previewDurationSec = (m_timeline ? m_timeline->totalDuration() : 0.0); // 업데이트한 Timeline 내에 계산되어 있는 총 영상 길이로 업데이트
+};
+
+void Renderer::previewPlay() {
+  m_previewPlaying = true;
+};
+
+void Renderer::previewPause() {
+  m_previewPlaying = false;
+};
+
+void Renderer::previewStop() {
+  m_previewPlaying = false;
+  m_previewTimeSec = 0.0; // "종료" 는 "일시정지" 와 다르게 타임라인 시간을 맨 처음으로 rollback
+};
+
 void Renderer::process() {
   // 렌더링 루프 진입 직전 EGL 초기화 수행
   if (!m_egl.init(m_pNativeWindow)) {
-    __android_log_print(ANDROID_LOG_ERROR, "NativeSampleModule", "EGL initialization failed");
+    __android_log_print(ANDROID_LOG_ERROR, "Renderer", "EGL initialization failed");
     return;
   }
 
@@ -59,7 +83,7 @@ void Renderer::process() {
   const int width = m_width.load();
   const int height = m_height.load();
   if (!m_skia.setupSkiaSurface(width, height)) {
-    __android_log_print(ANDROID_LOG_ERROR, "NativeSampleModule", "Failed to setup Skia surface");
+    __android_log_print(ANDROID_LOG_ERROR, "Renderer", "Failed to setup Skia surface");
     return;
   }
 
@@ -73,7 +97,7 @@ void Renderer::process() {
       const int width = m_width.load();
       const int height = m_height.load();
       if (!m_skia.setupSkiaSurface(width, height)) {
-        __android_log_print(ANDROID_LOG_ERROR, "NativeSampleModule", "Failed to recreate Skia surface in rendering loop");
+        __android_log_print(ANDROID_LOG_ERROR, "Renderer", "Failed to recreate Skia surface in rendering loop");
         continue;  // 혹은 break; 로 종료
       }
     }
@@ -84,21 +108,53 @@ void Renderer::process() {
     prev = curr;
 
     if (auto* canvas = m_skia.canvas()) {
-      // 캔버스 초기화
-      canvas->clear(SK_ColorLTGRAY);
-      
-      // 렌더링 스레드에서 컨테이너에 추가된 렌더링 객체 포인터들(공유 자원) 접근 시 스냅샷 캡쳐하여 얕은 복사 수행
-      std::vector<std::shared_ptr<IDrawable>> drawables;
+      // 렌더링 스레드에서 타임라인 객체(공유 자원) 접근 시 스냅샷 캡쳐하여 얕은 복사 수행
+      std::shared_ptr<Timeline> tl;
       {
-        std::lock_guard<std::mutex> lock(m_drawablesMtx);
-        drawables = m_drawables;
+        std::lock_guard<std::mutex> lock(m_timelineMtx);
+        tl = m_timeline;
       }
 
-      // mutex 락 해제 후 캡쳐 뜬 포인터로 렌더링 객체들에 접근하여 draw call 수행
-      for (auto& drawable : drawables) {
-        if (drawable) {
-          drawable->update(dt);
-          drawable->draw(canvas);
+      if (tl) {
+        /** 초기화된 타임라인 객체가 존재할 경우, 타임라인으로 렌더링 */
+
+        // 현재 타임라인 재생 중(m_previewPlaying) 상태에 따라 타임라인 재생 시간(m_previewTimeSec) 업데이트
+        // 만약 "m_previewPlaying == false" 인 경우, 타임라인 재생 시간을 그대로 둠으로써 동일한 클립만 계속 렌더링 -> Preview 가 정지되어 보임.
+        if (m_previewPlaying.load()) {
+          m_previewTimeSec += static_cast<double>(dt);
+          const double dur = m_previewDurationSec;
+
+          // 현재 타임라인 재생 시간이 영상 전체 길이를 넘어섰을 경우
+          if (dur > 0.0 && m_previewTimeSec > dur) {
+            m_previewTimeSec = dur;   // 현재 타임라인 재생 시간을 영상끝부분에 고정
+            m_previewPlaying = false; // 타임라인 재생 정지
+          }
+        }
+
+        // 현재 타임라인 재생 시간(m_previewTimeSec)을 기준으로 이미지 시퀀스 렌더링
+        const int w = m_width.load();
+        const int h = m_height.load();
+        RenderContext ctx{ canvas, w, h, m_previewTimeSec };
+        tl->render(ctx);
+      } else {
+        /** 초기화된 타임라인 객체가 없을 경우, 기존 drawables 객체들 렌더링 */
+
+        // 캔버스 초기화
+        canvas->clear(SK_ColorLTGRAY);
+        
+        // 렌더링 스레드에서 컨테이너에 추가된 렌더링 객체 포인터들(공유 자원) 접근 시 스냅샷 캡쳐하여 얕은 복사 수행
+        std::vector<std::shared_ptr<IDrawable>> drawables;
+        {
+          std::lock_guard<std::mutex> lock(m_drawablesMtx);
+          drawables = m_drawables;
+        }
+
+        // mutex 락 해제 후 캡쳐 뜬 포인터로 렌더링 객체들에 접근하여 draw call 수행
+        for (auto& drawable : drawables) {
+          if (drawable) {
+            drawable->update(dt);
+            drawable->draw(canvas);
+          }
         }
       }
 
