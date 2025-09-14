@@ -1,5 +1,10 @@
 {
   "files.associations": {
+    "*.kt": "kotlin",
+    "*.kts": "kotlin",
+    "*.gradle.kts": "kotlin",
+    "build.gradle": "groovy",
+    "settings.gradle": "groovy",
     "ios": "cpp",
     "thread": "cpp",
     "chrono": "cpp",
@@ -68,6 +73,15 @@
     "atomic": "cpp",
     "exception": "cpp",
     "system_error": "cpp",
-    "regex": "cpp"
+    "regex": "cpp",
+    "__std_stream": "cpp",
+    "fstream": "cpp",
+    "iomanip": "cpp",
+    "source_location": "cpp",
+    "cfenv": "cpp",
+    "condition_variable": "cpp",
+    "iostream": "cpp",
+    "semaphore": "cpp",
+    "span": "cpp"
   }
 }
