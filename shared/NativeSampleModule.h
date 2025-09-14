@@ -3,8 +3,10 @@
 #include <AppSpecsJSI.h>
 #include <memory>
 #include <string>
+#include <vector>
 #include <android/native_window.h> // ANativeWindow
 #include "render/Renderer.h"
+#include "preview/PreviewController.h"
 
 namespace facebook::react {
 
@@ -12,10 +14,6 @@ class NativeSampleModule
     : public NativeSampleModuleCxxSpec<NativeSampleModule> {
 public:
   NativeSampleModule(std::shared_ptr<CallInvoker> jsInvoker);
-
-  std::string reverseString(jsi::Runtime &rt, std::string input);
-  void startDecoding(jsi::Runtime &rt, const std::string& filePath);
-  void stopDecoding(jsi::Runtime &rt);
 
 public:
   // android surface 초기화
@@ -25,9 +23,20 @@ public:
   // android surface 제거
   void destroySurface();
 
+public:
+  // 입력받은 파일 경로 -> 이미지 시퀀스 생성 → Timeline 생성(경로 배열, 초 단위 길이/페이드, 그릴 영역 크기)
+  void setImageSequence(jsi::Runtime &rt, const std::vector<std::string>& paths, double clipDurSec, double xfadeSec);
+
+  // Preview 제어
+  void previewPlay(jsi::Runtime &rt);
+  void previewPause(jsi::Runtime &rt);
+  void previewStop(jsi::Runtime &rt);
+
+  // Timeline 총 재생 길이(초) 조회(최근에 생성된 Timeline 기준)
+  double getTimelineDuration(jsi::Runtime &rt) { return m_lastTimelineDurationSec; };
+
 private:
-  std::shared_ptr<Renderer> m_pRenderer;
-  bool m_bStarted = false;
+  double m_lastTimelineDurationSec = 0.0; // 가장 최근에 생성된 Timeline 전체 길이(초) 캐시
 };
 
 } // namespace facebook::react

@@ -1,34 +1,31 @@
 #include "NativeSampleModule.h"
 #include "drawables/RotatingRect.h"
 #include <android/native_window_jni.h> // ANativeWindow_fromSurface, ANativeWindow_release
+#include <android/log.h>  // 로그 출력을 위한 헤더
 
 namespace facebook::react {
 
+// TODO : 전역 변수를 사용하지 않아도 되도록 JSI 와 JNI 에서 동일한 TurboModule 인스턴스를 참조하도록 수정
 std::shared_ptr<NativeSampleModule> gModule;
+std::shared_ptr<Renderer> gRenderer;
+std::shared_ptr<PreviewController> gPreviewController;
+bool gRendererStarted = false;
 
 NativeSampleModule::NativeSampleModule(std::shared_ptr<CallInvoker> jsInvoker)
     : NativeSampleModuleCxxSpec(std::move(jsInvoker)) {}
 
-std::string NativeSampleModule::reverseString(jsi::Runtime &rt,
-                                              std::string input) {
-  return std::string(input.rbegin(), input.rend());
-}
-
-void NativeSampleModule::startDecoding(jsi::Runtime &rt, const std::string& filePath) {
-
-};
-
-void NativeSampleModule::stopDecoding(jsi::Runtime &rt) {
-
-};
-
 void NativeSampleModule::initSurface(ANativeWindow *window) {
   if (!window) return;
-  if (m_bStarted) return; // double init 방지
+  if (gRendererStarted) return; // double init 방지
 
   // renderer nullptr check
-  if (!m_pRenderer) {
-    m_pRenderer = std::make_shared<Renderer>();
+  if (!gRenderer) {
+    gRenderer = std::make_shared<Renderer>();
+  }
+
+  // preview controller nullptr check
+  if (!gPreviewController) {
+    gPreviewController = std::make_shared<PreviewController>(gRenderer);
   }
 
   /** drawable 객체 생성 및 추가 */
@@ -37,26 +34,62 @@ void NativeSampleModule::initSurface(ANativeWindow *window) {
   pRect->setSize(100.0f, 100.0f);
   pRect->setSpeed(120.0f);
   pRect->setColor(SK_ColorRED);
-  m_pRenderer->addDrawable(pRect);
+  gRenderer->addDrawable(pRect);
 
   // renderer 초기화
-  m_pRenderer->start(window);
-  m_bStarted = true;
+  gRenderer->start(window);
+  gRendererStarted = true;
 }
 
 void NativeSampleModule::changeSurface(int width, int height) {
-  if (m_bStarted && m_pRenderer) {
-    m_pRenderer->resize(width, height);
+  if (gRendererStarted && gRenderer) {
+    gRenderer->resize(width, height);
   }
 };
 
 void NativeSampleModule::destroySurface() {
-  if (!m_bStarted) return; // 초기화도 안된 상태에서 메모리 해제 시도 방지
-  if (m_pRenderer) {
-    m_pRenderer->clearDrawables();
-    m_pRenderer->stop();
+  if (!gRendererStarted) return; // 초기화도 안된 상태에서 메모리 해제 시도 방지
+  if (gRenderer) {
+    gRenderer->clearDrawables();
+    gRenderer->stop();
   }
-  m_bStarted = false;
+  gRendererStarted = false;
+};
+
+void NativeSampleModule::setImageSequence(jsi::Runtime &rt, const std::vector<std::string>& paths, double clipDurSec, double xfadeSec) {
+    // renderer nullptr check
+  if (!gRenderer) {
+    gRenderer = std::make_shared<Renderer>();
+  }
+
+  // preview controller nullptr check
+  if (!gPreviewController) {
+    gPreviewController = std::make_shared<PreviewController>(gRenderer);
+  }
+
+  if (gPreviewController) {
+    if (gPreviewController->setImageSequence(paths, clipDurSec, xfadeSec)) {
+      m_lastTimelineDurationSec = gPreviewController->durationSec();
+    }
+  }
+};
+
+void NativeSampleModule::previewPlay(jsi::Runtime &rt) {
+  if (gPreviewController) {
+    gPreviewController->previewPlay();
+  }
+};
+
+void NativeSampleModule::previewPause(jsi::Runtime &rt) {
+  if (gPreviewController) {
+    gPreviewController->previewPause();
+  }
+};
+
+void NativeSampleModule::previewStop(jsi::Runtime &rt) {
+  if (gPreviewController) {
+    gPreviewController->previewStop();
+  }
 };
 
 } // namespace facebook::react
