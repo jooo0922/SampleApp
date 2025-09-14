@@ -14,6 +14,8 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
   ${SHARED_ROOT}/render/EglContext.cpp
   ${SHARED_ROOT}/render/SkiaGanesh.cpp
   ${SHARED_ROOT}/drawables/RotatingRect.cpp
+  ${SHARED_ROOT}/video/Timeline.cpp
+  ${SHARED_ROOT}/preview/PreviewController.cpp
 )
 
 # Search for Android system libs
@@ -42,12 +44,17 @@ else()
   message(FATAL_ERROR "not supported ABI: ${ANDROID_ABI}")
 endif()
 
+# use C++ 17
+target_compile_features(${CMAKE_PROJECT_NAME} PUBLIC cxx_std_17)
+
 # Define where CMake can find the additional header files. We need to crawl back the jni, main, src, app, android folders
 # Include Skia headers
 target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
   ${SHARED_ROOT}
   ${SHARED_ROOT}/render
   ${SHARED_ROOT}/drawables
+  ${SHARED_ROOT}/video
+  ${SHARED_ROOT}/preview
   ${SKIA_INCLUDE_DIR}
 )
 
