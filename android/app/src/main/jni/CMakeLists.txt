@@ -10,6 +10,7 @@ include(${REACT_ANDROID_DIR}/cmake-utils/ReactNative-application.cmake)
 set(SHARED_ROOT ${CMAKE_SOURCE_DIR}/../../../../../shared)
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
   ${SHARED_ROOT}/NativeSampleModule.cpp
+  ${SHARED_ROOT}/engine/Engine.cpp
   ${SHARED_ROOT}/render/Renderer.cpp
   ${SHARED_ROOT}/render/EglContext.cpp
   ${SHARED_ROOT}/render/SkiaGanesh.cpp
@@ -51,6 +52,7 @@ target_compile_features(${CMAKE_PROJECT_NAME} PUBLIC cxx_std_17)
 # Include Skia headers
 target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
   ${SHARED_ROOT}
+  ${SHARED_ROOT}/engine
   ${SHARED_ROOT}/render
   ${SHARED_ROOT}/drawables
   ${SHARED_ROOT}/video
