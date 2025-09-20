@@ -1,13 +1,8 @@
 #pragma once
 
 #include <AppSpecsJSI.h>
-#include <memory>
-#include <string>
-#include <vector>
 #include <android/native_window.h> // ANativeWindow
-#include "render/Renderer.h"
-#include "preview/PreviewController.h"
-
+#include "engine/Engine.h"
 namespace facebook::react {
 
 class NativeSampleModule
@@ -33,10 +28,7 @@ public:
   void previewStop(jsi::Runtime &rt);
 
   // Timeline 총 재생 길이(초) 조회(최근에 생성된 Timeline 기준)
-  double getTimelineDuration(jsi::Runtime &rt) { return m_lastTimelineDurationSec; };
-
-private:
-  double m_lastTimelineDurationSec = 0.0; // 가장 최근에 생성된 Timeline 전체 길이(초) 캐시
+  double getTimelineDuration(jsi::Runtime &rt);
 };
 
 } // namespace facebook::react
