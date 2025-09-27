@@ -2,7 +2,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "render/Renderer.h"
+#include "../render/Renderer.h"
 
 class PreviewController
 {
