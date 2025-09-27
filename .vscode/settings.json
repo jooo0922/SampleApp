@@ -82,6 +82,9 @@
     "condition_variable": "cpp",
     "iostream": "cpp",
     "semaphore": "cpp",
-    "span": "cpp"
+    "span": "cpp",
+    "functional": "cpp",
+    "future": "cpp",
+    "typeindex": "cpp"
   }
 }
