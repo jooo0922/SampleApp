@@ -75,3 +75,9 @@ yarn-error.log
 
 # 3rd party libs
 third_party/**/*.a
+
+# compile commands
+/compile_commands.json
+
+# clangd
+.cache/
