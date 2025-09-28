@@ -86,5 +86,37 @@
     "functional": "cpp",
     "future": "cpp",
     "typeindex": "cpp"
+  },
+  // MS 엔진 비활성화(중복 인덱싱 방지)
+  "C_Cpp.intelliSenseEngine": "Disabled",
+  "C_Cpp.default.compileCommands": "${workspaceFolder}/compile_commands.json",
+  "C_Cpp.default.compilerPath": "${env:ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/darwin-x86_64/bin/clang++",
+  "C_Cpp.default.defines": ["__ANDROID__", "ANDROID"],
+
+  // clangd만 사용
+  "clangd.arguments": [
+    "--background-index",
+    "--clang-tidy",
+    "--all-scopes-completion",
+    "--completion-style=detailed",
+    "--header-insertion=never",
+    "--compile-commands-dir=${workspaceFolder}"
+  ],
+
+  // 무거운 폴더는 워치/검색 제외 (인덱싱 가속 체감 큼)
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/.git/**": true,
+    "**/.gradle/**": true,
+    "**/.cxx/**": true,
+    "**/android/build/**": true,
+    "**/ios/build/**": true
+  },
+  "search.exclude": {
+    "**/node_modules/**": true,
+    "**/.gradle/**": true,
+    "**/.cxx/**": true,
+    "**/android/build/**": true,
+    "**/ios/build/**": true
   }
 }
