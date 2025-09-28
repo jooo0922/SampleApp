@@ -1,0 +1,39 @@
+CompileFlags:
+  # 루트의 compile_commands.json 사용
+  CompilationDatabase: .
+  # compile_commands.json에 빠진 경우를 대비한 최소 Fallback
+  FallbackFlags: [-std=c++17]
+  # 꼭 필요한 경우에 한해 보강(중복 들어가도 무해)
+  Add: [-D__ANDROID__, -DANDROID]
+
+Index:
+  Background: Build
+  StandardLibrary: Yes
+
+Diagnostics:
+  ClangTidy: true
+  # 기본 셋 + 소음 높은 일부만 제외(필요 시 조정)
+  ClangTidyChecks: >
+    -*,
+    bugprone-*,
+    performance-*,
+    modernize-*,
+    readability-*,
+    -modernize-use-trailing-return-type,
+    -readability-magic-numbers
+  # 사용하지 않는 include 경고 (자동 삽입은 꺼둔 상태 유지)
+  UnusedIncludes: Strict
+
+Completion:
+  AllScopes: true
+  DetailedLabels: true
+  # 파라미터 힌트 강화 (clangd 16+)
+  Snippets: true
+
+InlayHints:
+  Enabled: true
+  ParameterNames: true
+  DeducedTypes: true
+
+HeaderInsertion:
+  AddIncludes: Never
