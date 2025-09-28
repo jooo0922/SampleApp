@@ -1,6 +1,7 @@
 #include "NativeSampleModule.h"
 #include <android/native_window_jni.h> // ANativeWindow_fromSurface, ANativeWindow_release
 #include <android/log.h>  // 로그 출력을 위한 헤더
+#include "./engine/Engine.h"
 
 namespace facebook::react {
 NativeSampleModule::NativeSampleModule(std::shared_ptr<CallInvoker> jsInvoker)

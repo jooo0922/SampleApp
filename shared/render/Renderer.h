@@ -5,8 +5,8 @@
 #include <thread>
 #include <vector>
 #include <mutex>
-#include "EglContext.h"
-#include "SkiaGanesh.h"
+#include "./EglContext.h"
+#include "./SkiaGanesh.h"
 #include "../drawables/IDrawable.h"
 #include "../video/Timeline.h"
 

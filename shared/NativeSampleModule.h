@@ -2,7 +2,6 @@
 
 #include <AppSpecsJSI.h>
 #include <android/native_window.h> // ANativeWindow
-#include "engine/Engine.h"
 namespace facebook::react {
 
 class NativeSampleModule
