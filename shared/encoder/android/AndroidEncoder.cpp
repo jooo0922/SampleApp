@@ -254,9 +254,11 @@ bool AndroidEncoder::initSkia() {
 };
 
 void AndroidEncoder::destroyEGL() {
-
+  // encoder 전용 EGL 자원 해제
+  m_egl.destroy();
 };
 
 void AndroidEncoder::destroySkia() {
-
+  // encoder 전용 skia 자원 해제
+  m_skia.destroy();
 };
