@@ -236,7 +236,21 @@ bool AndroidEncoder::initEGL() {
 };
 
 bool AndroidEncoder::initSkia() {
-
+  // encoder 전용 스레드(Engine::m_encodeThread)에 바인딩된 EGLContext 를 사용하는 ganesh gpu 백엔드 기반 skia surface 생성
+  /**
+   * encoder 전용 스레드에 바인딩된 EGLContext를 현재로 만들고(eglMakeCurrent),
+   * AMediaCodec이 제공한 ANativeWindow(offscreen native surface)로 생성한 EGLSurface(윈도우 표면)의
+   * default framebuffer(FBO 0)를 Skia Ganesh(GL) 백엔드로 래핑해 SkSurface를 만든다.
+   *
+   * 결과적으로, 이 SkSurface에 그리는 모든 내용은 해당 EGLSurface에 기록되고,
+   * flush 후 eglSwapBuffers()를 호출하면 프레임이 BufferQueue를 통해
+   * MediaCodec 인코더 입력으로 제출된다.
+   */
+  if (!m_skia.setupSkiaSurface(m_encoderConfig.width, m_encoderConfig.height)) {
+    LOGE("SkiaGanesh::setupSkiaSurface failed");
+    return false;
+  }
+  return true;
 };
 
 void AndroidEncoder::destroyEGL() {
