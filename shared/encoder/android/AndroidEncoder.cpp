@@ -207,8 +207,17 @@ bool AndroidEncoder::createCodecAndSurface() {
   return true;
 };
 
+// 코덱을 시작하기 위해 호출하는 함수
 bool AndroidEncoder::startCodec() {
-
+  // AMediaCodec_start()를 호출해야 그때부터 offscreen 전용 native surface에 그린 프레임이 실제로 인코더로 흘러간다.
+  // 즉, 이 API 가 호출 및 성공해야 AMediaCodec 내부 BufferQueue 를 통해 연결된 surface -> 인코더 입력 파이프라인이 가동되기 시작함.
+  media_status_t ms = AMediaCodec_start(m_pCodec);
+  if (ms != AMEDIA_OK) {
+    // 시작 실패에 대한 예외 처리
+    LOGE("AMediaCodec_start failed: %d", ms);
+    return false;
+  }
+  return true;
 };
 
 bool AndroidEncoder::initEGL() {
