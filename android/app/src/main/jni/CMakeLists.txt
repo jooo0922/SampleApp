@@ -17,6 +17,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
   ${SHARED_ROOT}/drawables/RotatingRect.cpp
   ${SHARED_ROOT}/video/Timeline.cpp
   ${SHARED_ROOT}/preview/PreviewController.cpp
+  ${SHARED_ROOT}/encoder/android/AndroidEncoder.cpp
 )
 
 # Search for Android system libs
@@ -59,6 +60,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
   ${SHARED_ROOT}/video
   ${SHARED_ROOT}/preview
   ${SHARED_ROOT}/encoder
+  ${SHARED_ROOT}/encoder/android
   ${SKIA_INCLUDE_DIR}
 )
 
