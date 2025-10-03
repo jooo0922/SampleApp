@@ -221,7 +221,18 @@ bool AndroidEncoder::startCodec() {
 };
 
 bool AndroidEncoder::initEGL() {
+  // AMediaCodec API 가 생성한 입력용 offscreen native surface 를 EGL 에서 사용할 수 있도록 초기화한다.
+  if (!m_egl.init(m_pInputWindow)) {
+    LOGE("EglContext::init failed");
+    return false;
+  }
 
+  // EGL 초기화 완료 후, PTS 시간 스티커를 프레임마다 붙이는 데 사용되는 EGL 확장 함수(eglPresentationTimeANDROID) 포인터를 로드한다.
+  if (!s_eglPresentationTimeANDROID) {
+    s_eglPresentationTimeANDROID = (PFNEGLPRESENTATIONTIMEANDROIDPROC)eglGetProcAddress("eglPresentationTimeANDROID");
+  }
+
+  return true;
 };
 
 bool AndroidEncoder::initSkia() {
