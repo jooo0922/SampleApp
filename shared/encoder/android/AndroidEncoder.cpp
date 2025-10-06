@@ -262,3 +262,65 @@ void AndroidEncoder::destroySkia() {
   // encoder 전용 skia 자원 해제
   m_skia.destroy();
 };
+
+// TODO : AndroidEncdoer.cpp 구현 완료 후 ./tools/gen_compile_db.sh 스크립트 다시 돌려서 현재 소스를 compile db 대상에 포함시키기
+bool AndroidEncoder::renderOneFrame(double tSec) {
+  /**
+   * 타임라인 기반 렌더링 수행
+   *
+   * Preview 렌더링과 동일하게 Renderer::process() 내부에서
+   * Timeline::render() 함수를 호출하여 렌더링한다!
+   *
+   * 단, encoder 의 렌더링 함수는 Codec 에 입력하여 encoding 할 버퍼를 렌더링하는 목적이므로,
+   * 실시간 루프 타이밍 제약이 없다!
+   */
+
+  // 현재 인코딩 스레드에 생성된 EGLContext 바인딩된 상태에서만 렌더링
+  if (!m_egl.makeCurrent()) {
+    LOGE("EglContext::makeCurrent failed");
+    return false;
+  }
+
+  // SkCanvas 포인터를 얻어와서 렌더링
+  SkCanvas* canvas = m_skia.canvas();
+  if (!canvas) {
+    LOGE("SkiaGanesh::canvas is null");
+    return false;
+  }
+
+  // AndroidEncoder::encodeBlocking 함수 내 인코딩 루프에서 계산된 현재 프레임 시간값(초)를 기준으로 이미지 시퀀스 렌더링
+  RenderContext ctx{ canvas, m_encoderConfig.width, m_encoderConfig.height, tSec };
+  m_pTimeline->render(ctx);
+
+  // Skia 내부 command queue 에 쌓인 현재 프레임까지 요청된 모든 draw operation 들을 GPU 로 전송하여 실행 요청
+  m_skia.flush();
+
+  /**
+   * 디스플레이 출력용 native surface 의 경우,
+   * vsync 시점에 맞춰 back buffer 와 front buffer 를 교체하면 출력되는 화면이 업데이트 됬었다.
+   *
+   * 이와 마찬가지로, encoding 용 offscreen native surface 에 바인딩된 EGLContext 에서
+   * scanline 으로 렌더링이 완료된 back buffer 는 Codec 에 입력 buffer queue 에 전달되어 인코딩 대기 상태가 된다.
+   */
+  if (!m_egl.swapBuffer()) {
+    LOGE("EglContext::swapBuffer failed");
+    return false;
+  }
+  return true;
+};
+
+bool AndroidEncoder::drainEncoderAndMux(bool endOfStream) {
+  return true;
+};
+
+bool AndroidEncoder::openMuxer() {
+  return true;
+};
+
+void AndroidEncoder::closeMuxer() {
+
+};
+
+void AndroidEncoder::setPresentationTimeNs(int64_t ptsNs) {
+
+};
