@@ -263,7 +263,6 @@ void AndroidEncoder::destroySkia() {
   m_skia.destroy();
 };
 
-// TODO : AndroidEncdoer.cpp 구현 완료 후 ./tools/gen_compile_db.sh 스크립트 다시 돌려서 현재 소스를 compile db 대상에 포함시키기
 bool AndroidEncoder::renderOneFrame(double tSec) {
   /**
    * 타임라인 기반 렌더링 수행
