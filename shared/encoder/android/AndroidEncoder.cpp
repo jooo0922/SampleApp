@@ -300,7 +300,8 @@ bool AndroidEncoder::renderOneFrame(double tSec) {
    * vsync 시점에 맞춰 back buffer 와 front buffer 를 교체하면 출력되는 화면이 업데이트 됬었다.
    *
    * 이와 마찬가지로, encoding 용 offscreen native surface 에 바인딩된 EGLContext 에서
-   * scanline 으로 렌더링이 완료된 back buffer 는 Codec 에 입력 buffer queue 에 전달되어 인코딩 대기 상태가 된다.
+   * scanline 으로 렌더링이 완료된 back buffer 는
+   * buffer swapping 시점에 Codec 에 입력 buffer queue 에 전달되어 인코딩 대기 상태가 된다.
    */
   if (!m_egl.swapBuffer()) {
     LOGE("EglContext::swapBuffer failed");
@@ -310,6 +311,103 @@ bool AndroidEncoder::renderOneFrame(double tSec) {
 };
 
 bool AndroidEncoder::drainEncoderAndMux(bool endOfStream) {
+  if (!m_pCodec || !m_pMuxer) {
+    // Codec 또는 Muxer 가 준비되지 않았으면 인코딩된 패킷을 .mp4 컨테이너에 붙여넣을 수 없음
+    return false;
+  }
+
+  AMediaCodecBufferInfo info{};
+  const int timeoutUs = 10'000; // 10ms -> AMediaCodec_dequeueOutputBuffer API 의 최대 blocking 시간
+
+  for (;;) {
+    /**
+     * AMediaCodec_dequeueOutputBuffer
+     * - 호출 스레드(Engine::m_encodeThread)를 최대 timeoutUs(여기서는 10ms)까지 대기시키고,
+     *   그 사이 인코딩된 출력 버퍼가 queue에 생기면 즉시 idx로 돌려준다.
+     * - 10ms 동안 아무것도 나오지 않으면 AMEDIACODEC_INFO_TRY_AGAIN_LATER를 반환해 “이번엔 buffer queue 에 인코딩된 패킷이 없었다”는 신호를 준다.
+     *
+     * idx 값이 의미하는 상태와 처리
+     * - AMEDIACODEC_INFO_TRY_AGAIN_LATER: 아직 dequeue할 패킷이 없다. 평상시엔 루프 종료, EOS 플러시 시(endOfStream==true)엔 남은 패킷을 기다리기 위해 계속 반복.
+     * - AMEDIACODEC_INFO_OUTPUT_FORMAT_CHANGED: 코덱이 최초로 인코딩 출력 포맷을 알려주는 순간. 이때 딱 한 번 AMediaMuxer_addTrack → AMediaMuxer_start를 호출해 mp4 트랙을 준비한다.
+     * - idx >= 0: 실제 인코딩된 패킷이 queue에 준비된 상태. 버퍼 포인터를 얻어 해당 트랙에 쓰고, EOS 플래그가 설정돼 있으면 루프를 종료한다.
+     *
+     * 흐름 요약: 포맷 변경 이벤트가 첫 한 번 발생한 이후에는 AMEDIACODEC_INFO_TRY_AGAIN_LATER와 실제 패킷(idx>=0)이 교대로 반복되며,
+     *            drain 호출은 새 패킷을 발견할 때마다 muxer 트랙에 기록하고, 종료 시에는 endOfStream 플래그로 남은 패킷을 모두 비운다.
+     *
+     * (참고로, idx 는 AMEDIACODEC_INFO_TRY_AGAIN_LATER, AMEDIACODEC_INFO_OUTPUT_FORMAT_CHANGED 와 같은 음수 값인 상태값이 반환될 수 있기 때문에
+     * 부호가 있는 사이즈를 뜻하는 타입인 ssize_t 로 선언되어 있다.)
+     */
+    ssize_t idx = AMediaCodec_dequeueOutputBuffer(m_pCodec, &info, timeoutUs);
+
+    if (idx == AMEDIACODEC_INFO_TRY_AGAIN_LATER) {
+      /** 10ms 동안 기다려봐도 buffer queue 에 인코딩된 패킷이 없는 경우 처리 */
+
+      if (endOfStream) {
+        // 호출부(AndroidEncoder::encodeBlocking(true))가 인코딩 루프 탈출 후 남은 패킷을 확인사살 하고자 호출한 지점이라면, 다음 for(;;) 루프를 반복하면서 남은 패킷이 나올 때까지 계속 대기
+        continue;
+      }
+
+      // 호출부(AndroidEncoder::encodeBlocking(false))가 인코딩 루프 안쪽이면, 이미 현재 인코딩 루프에서 렌더링 및 인코딩된 패킷이 dequeue 되어버려
+      // 남아있는 패킷이 없다는 뜻이므로 for(;;) 루프를 탈출하고 다음 인코딩 루프로 넘어가도록 함.
+      break;
+    } else if (idx == AMEDIACODEC_INFO_OUTPUT_FORMAT_CHANGED) {
+      /** 코덱이 최초로 인코딩 출력 포맷을 알려주는 순간 처리 */
+
+      // AndroidEncoder::createCodecAndSurface()에서 설정한 "각 프레임을 어떤 방식으로 압축할 지"에 대한 codec format 정보를 가져옴.
+      AMediaFormat* ofmt = AMediaCodec_getOutputFormat(m_pCodec);
+      // 알려준 출력 포맷에 맞춰 mp4 트랙을 준비한다.
+      /**
+       * 참고로, MP4 컨테이너는 하나 이상의 트랙(track)으로 구성되고,
+       * 각각의 트랙 안에 같은 종류의 샘플(예: 비디오 프레임, 오디오 프레임)이 순서대로 저장된다.
+       *
+       * 즉, 비디오냐 오디오냐에 따라 각각 트랙을 구분하여 추가하면 되는건데,
+       * 여기서는 오디오 인코딩은 안해도 되니까 비디오 트랙 하나만 만들면 된다.
+       *
+       * 코드에서 AMediaMuxer_addTrack으로 만드는 것도 바로 그 “비디오 트랙”이고,
+       * AMediaMuxer_writeSampleData로 한 프레임씩 붙여 넣으면 해당 트랙에 누적됩니다.
+       */
+      m_trackIndex = AMediaMuxer_addTrack(m_pMuxer, ofmt);
+      // 사용이 끝난 codec format 메모리 해제
+      AMediaFormat_delete(ofmt);
+
+      if (m_trackIndex < 0) {
+        LOGE("AMediaMuxer_addTrack failed");
+        return false;
+      }
+
+      // 생성된 비디오 트랙에 새 패킷들을 붙여넣을 수 있는 상태가 되도록 Muxer 시작 함수 호출
+      media_status_t ms = AMediaMuxer_start(m_pMuxer);
+      if (ms != AMEDIA_OK) {
+        LOGE("AMediaMuxer_start failed: %d", ms);
+        return false;
+      }
+      m_muxerStarted = true;
+
+    } else if (idx >= 0) {
+      /** 실제 인코딩된 패킷이 buffer queue에 준비된 상태 처리 */
+
+      // 인코딩된 패킷의 버퍼 포인터를 얻어온다.
+      size_t outSize = 0;
+      uint8_t* out = AMediaCodec_getOutputBuffer(m_pCodec, idx, &outSize);
+      if (out && info.size > 0 && m_muxerStarted) {
+        // 얻어온 버퍼 포인터가 유효하고, 패킷 크기가 0보다 크고, Muxer가 시작된 상태라면 mp4 트랙에 붙여넣기
+        AMediaMuxer_writeSampleData(m_pMuxer, m_trackIndex, out + info.offset, &info);
+      }
+
+      // 사용이 끝난 출력 버퍼를 AMediaCodec 에게 반환한다.
+      AMediaCodec_releaseOutputBuffer(m_pCodec, idx,  false /* render */);
+
+      if (info.flags & AMEDIACODEC_BUFFER_FLAG_END_OF_STREAM) {
+        // info.flags 와 비트단위 AND 연산을 수행하여 AMEDIACODEC_BUFFER_FLAG_END_OF_STREAM 상태가 켜져있는지 확인
+        // -> 만약 EOS 플래그가 설정되어 있다면, 이 버퍼가 스트림의 마지막 패킷임을 Codec 이 알린 것이므로, for(;;) 루프 탈출
+        break;
+      }
+    } else {
+      /** 그 외 정보성 상태값이 반환된 경우 처리 */
+      // 그 외(정보성 코드)는 현재 로직에선 따로 처리할 필요가 없다.
+    }
+  }
+
   return true;
 };
 
