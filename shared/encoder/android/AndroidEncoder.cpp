@@ -412,11 +412,63 @@ bool AndroidEncoder::drainEncoderAndMux(bool endOfStream) {
 };
 
 bool AndroidEncoder::openMuxer() {
+  /** .mp4 파일을 생성 및 열고, AMediaMuxer 인스턴스를 생성한다 */
+  /**
+   * POSIX open()은 전역 네임스페이스(::open)에 정의된 시스템 호출이다.
+   * - POSIX(Portable Operating System Interface)는 유닉스 계열 운영체제들에서 서로 다른 이름으로 정의된 시스템 호출을
+   *   어느 운영체제에서든 하나의 이름으로 호출할 수 있도록 전역 스페이스에 공통으로 정의된 시스템 호출 인터페이스 표준.
+   *   덕분에 ::open, ::close처럼 전역 함수 형태로 접근한다.
+   * - open()은 파일이나 장치를 열고, 그 식별자로서 “파일 디스크립터(fd)”를 돌려준다.
+   *   파일 디스크립터는 OS가 파일/디바이스를 구분하기 위해 배정하는 정수 ID로, 일종의 핸들(handle) 역할을 한다.
+   */
+  m_outputFd = ::open(
+    m_encoderConfig.outputPath.c_str(),
+    O_CREAT | O_TRUNC | O_WRONLY, // 해당 경로에 파일이 없으면 생성, 있으면 비우고, 쓰기 전용으로 연다.
+    0644                          // 해당 파일에 대한 사용자 계정별 권한을 8진수로 정의 (6: 소유자는 읽기/쓰기 허용, 4: 그룹 사용자는 읽기 허용, 4: 기타 사용자는 읽기 허용)
+  );
+  if (m_outputFd < 0) {
+    LOGE("open output file failed: %s", m_encoderConfig.outputPath.c_str());
+    return false;
+  }
+
+  // AMediaMuxer는 C FILE*가 아니라 파일 디스크립터(int)를 요구한다.
+  // 그래서 std::fopen 대신 POSIX open()에서 받은 fd를 그대로 넘긴다.
+  m_pMuxer = AMediaMuxer_new(m_outputFd, AMEDIAMUXER_OUTPUT_FORMAT_MPEG_4);
+  if (!m_pMuxer) {
+    // Muxer 생성 실패 시, 생성된 파일 디스크립터 닫고 실패 리턴
+    LOGE("AMediaMuxer_new failed");
+    ::close(m_outputFd);
+    m_outputFd = -1;
+    return false;
+  }
+
   return true;
 };
 
 void AndroidEncoder::closeMuxer() {
+  /** Muxer에서 사용한 리소스를 정리하고 파일 디스크립터도 닫는다. */
+  if (m_pMuxer) {
+    // Muxer 가 시작된 상태라면 AMediaMuxer_stop() 로 정지시킨 이후에 mp4 파일을 정상적으로 닫는다.
+    if (m_muxerStarted) {
+      AMediaMuxer_stop(m_pMuxer);
+    }
+    // Muxer 인스턴스 해제
+    AMediaMuxer_delete(m_pMuxer);
+    m_pMuxer = nullptr;
+  }
 
+  if (m_outputFd >= 0) {
+    /**
+     * close() 역시 POSIX 전역 함수로, fd를 커널에 반환해 재사용 가능 상태로 돌린다.
+     * fd를 닫은 뒤 -1로 초기화해 “더 이상 유효하지 않다”는 것을 코드상에서 명확히 한다.
+     */
+    ::close(m_outputFd);
+    m_outputFd = -1;
+  }
+
+  // Muxer 관련 멤버변수 초기화
+  m_muxerStarted = false;
+  m_trackIndex = -1;
 };
 
 void AndroidEncoder::setPresentationTimeNs(int64_t ptsNs) {
