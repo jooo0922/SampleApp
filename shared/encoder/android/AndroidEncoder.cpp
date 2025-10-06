@@ -472,5 +472,10 @@ void AndroidEncoder::closeMuxer() {
 };
 
 void AndroidEncoder::setPresentationTimeNs(int64_t ptsNs) {
-
+  if (s_eglPresentationTimeANDROID &&           // eglPresentationTimeANDROID 함수 포인터 로드되었는지 검사
+      m_egl.display() != EGL_NO_DISPLAY &&      // EGLDisplay 및 EGLSurface 생성 여부 확인
+      m_egl.surface() != EGL_NO_SURFACE) {
+    // eglPresentationTimeANDROID 함수 포인터가 유효하면 호출하여 현재 바인딩된 EGLSurface 에 PTS 시간 스티커를 붙인다.
+    s_eglPresentationTimeANDROID(m_egl.display(), m_egl.surface(), ptsNs);
+  }
 };
