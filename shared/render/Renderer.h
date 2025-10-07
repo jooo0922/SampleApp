@@ -33,6 +33,7 @@ public:
 public:
   // 타임라인 연결/제어(Preview) 관련 메서드
   void setTimeline(std::shared_ptr<Timeline> tl);
+  std::shared_ptr<Timeline> timelineSnapshot();
   void previewPlay();
   void previewPause();
   void previewStop();

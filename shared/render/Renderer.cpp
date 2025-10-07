@@ -59,6 +59,13 @@ void Renderer::setTimeline(std::shared_ptr<Timeline> tl) {
   m_previewDurationSec = (m_timeline ? m_timeline->totalDuration() : 0.0); // 업데이트한 Timeline 내에 계산되어 있는 총 영상 길이로 업데이트
 };
 
+std::shared_ptr<Timeline> Renderer::timelineSnapshot() {
+  // mutex lock 으로 임계영역을 잠근 후 m_timeline 얕은 복사본 반환
+  // -> IEncoder 모듈에서 Renderer 가 hosting 하고 있는 동일한 Timeline 을 공유하여 인코딩에 사용하기 위함
+  std::lock_guard<std::mutex> lock(m_timelineMtx);
+  return m_timeline;
+};
+
 void Renderer::previewPlay() {
   m_previewPlaying = true;
 };
