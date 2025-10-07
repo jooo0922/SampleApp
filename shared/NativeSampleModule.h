@@ -28,6 +28,18 @@ public:
 
   // Timeline 총 재생 길이(초) 조회(최근에 생성된 Timeline 기준)
   double getTimelineDuration(jsi::Runtime &rt);
+
+public:
+  // Encoder 제어
+  void startEncoding(jsi::Runtime &rt, int width, int height, int fps, int bitrate, const std::string& mime,const std::string& outputPath);
+  void cancelEncoding(jsi::Runtime &rt);
+  bool isEncoding(jsi::Runtime &rt);
+
+  // 인코딩된 파일 경로 조회
+  std::string getLastEncodedPath(jsi::Runtime &rt);
+
+  // 인코딩 진행률([0.0, 1.0]) 조회
+  double getEncodingProgress(jsi::Runtime &rt);
 };
 
 } // namespace facebook::react
