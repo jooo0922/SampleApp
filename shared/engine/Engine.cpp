@@ -109,3 +109,15 @@ void Engine::previewStop()
     m_previewController->previewStop();
   }
 };
+
+void Engine::startEncoding(const EncoderConfig& config) {
+
+};
+
+void Engine::cancelEncoding() {
+
+};
+
+void Engine::joinEncodeThread() {
+  
+};
