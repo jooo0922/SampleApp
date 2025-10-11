@@ -18,6 +18,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
   ${SHARED_ROOT}/video/Timeline.cpp
   ${SHARED_ROOT}/preview/PreviewController.cpp
   ${SHARED_ROOT}/encoder/android/AndroidEncoder.cpp
+  ${SHARED_ROOT}/logger/Logger.cpp
 )
 
 # Search for Android system libs
@@ -61,6 +62,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
   ${SHARED_ROOT}/preview
   ${SHARED_ROOT}/encoder
   ${SHARED_ROOT}/encoder/android
+  ${SHARED_ROOT}/logger
   ${SKIA_INCLUDE_DIR}
 )
 
