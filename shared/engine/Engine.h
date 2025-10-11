@@ -70,4 +70,7 @@ private:
   std::atomic<bool> m_cancelFlag = false;
   std::atomic<double> m_encodingProgress = 0.0;
   std::string m_lastEncodedPath;
+
+private:
+  static constexpr const char* k_logTag = "Engine";
 };
