@@ -1,7 +1,16 @@
 #include "Engine.h"
 #include "../drawables/RotatingRect.h"
+#include "../logger/Logger.h"
 #include <android/native_window_jni.h> // ANativeWindow_fromSurface, ANativeWindow_release
-#include <android/log.h>  // 로그 출력을 위한 헤더
+#include <algorithm> // std::clamp
+#if defined (__ANDROID__)
+  #include "../encoder/android/AndroidEncoder.h"
+#elif defined (__APPLE__)
+  #include <TargetConditionals.h>
+  #if TARGET_OS_IOS
+    // TODO : iOS Encoder 헤더 포함
+  #endif
+#endif
 
 Engine& Engine::instance() {
   static Engine instance;
@@ -119,5 +128,9 @@ void Engine::cancelEncoding() {
 };
 
 void Engine::joinEncodeThread() {
-  
+  // 기존에 실행 중인 인코딩 스레드가 있다면 작업이 끝날 때까지 대기 후 스레드 자원 정리.
+  // -> 인코딩 스레드 정리 및 중복 생성 방지 목적
+  if (m_encodeThread.joinable()) {
+    m_encodeThread.join();
+  }
 };
