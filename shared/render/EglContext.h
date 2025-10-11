@@ -22,4 +22,7 @@ private:
   EGLDisplay m_display = EGL_NO_DISPLAY;
   EGLContext m_context = EGL_NO_CONTEXT;
   EGLSurface m_surface = EGL_NO_SURFACE;
+
+private:
+  static constexpr const char* k_logTag = "EglContext";
 };

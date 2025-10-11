@@ -1,17 +1,17 @@
 #include "EglContext.h"
-#include <android/log.h>  // 로그 출력을 위한 헤더
+#include "../logger/Logger.h"
 
 bool EglContext::init(ANativeWindow* window) {
   // EGLDisplay 생성
   m_display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
   if (m_display == EGL_NO_DISPLAY) {
-    __android_log_print(ANDROID_LOG_ERROR, "NativeSampleModule", "Unable to get EGLDisplay");
+    Logger::error(k_logTag, "Unable to get EGLDisplay");
     return false;
   }
 
   // egl 초기화
   if (!eglInitialize(m_display, nullptr, nullptr)) {
-    __android_log_print(ANDROID_LOG_ERROR, "NativeSampleModule", "Failed to initialize EGL");
+    Logger::error(k_logTag, "Failed to initialize EGL");
     return false;
   }
 
@@ -28,7 +28,7 @@ bool EglContext::init(ANativeWindow* window) {
   EGLConfig eglConfig;
   EGLint numConfigs;
   if (!eglChooseConfig(m_display, configAttribs, &eglConfig, 1, &numConfigs) || numConfigs < 1) {
-    __android_log_print(ANDROID_LOG_ERROR, "NativeSampleModule", "Failed to choose EGL config");
+    Logger::error(k_logTag, "Failed to choose EGL config");
     return false;
   }
 
@@ -39,14 +39,14 @@ bool EglContext::init(ANativeWindow* window) {
   };
   m_context = eglCreateContext(m_display, eglConfig, EGL_NO_CONTEXT, contextAttribs);
   if (m_context == EGL_NO_CONTEXT) {
-    __android_log_print(ANDROID_LOG_ERROR, "NativeSampleModule", "Failed to create EGL context");
+    Logger::error(k_logTag, "Failed to create EGL context");
     return false;
   }
 
   // 생성된 EGLContext 기반으로 EGLSurface 생성 -> android native window 와 연결
   m_surface = eglCreateWindowSurface(m_display, eglConfig, window, nullptr);
   if (m_surface == EGL_NO_SURFACE) {
-    __android_log_print(ANDROID_LOG_ERROR, "NativeSampleModule", "Failed to create EGL surface");
+    Logger::error(k_logTag, "Failed to create EGL surface");
     return false;
   }
 

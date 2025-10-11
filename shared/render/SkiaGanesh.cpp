@@ -1,5 +1,5 @@
 #include "SkiaGanesh.h"
-#include <android/log.h>  // 로그 출력을 위한 헤더
+#include "../logger/Logger.h"
 
 /**
  * GrDirectContext 및 SkSurface 생성 함수.
@@ -7,7 +7,7 @@
  */
 bool SkiaGanesh::setupSkiaSurface(int width, int height) {
   if (width <= 0 || height <= 0) {
-    __android_log_print(ANDROID_LOG_ERROR, "NativeSampleModule", "Invalid image size");
+    Logger::error(k_logTag, "Invalid image size");
     return false;
   }
 
@@ -16,7 +16,7 @@ bool SkiaGanesh::setupSkiaSurface(int width, int height) {
     auto interface = GrGLMakeNativeInterface();
     m_pGrContext = GrDirectContexts::MakeGL(interface);
     if (!m_pGrContext) {
-      __android_log_print(ANDROID_LOG_ERROR, "NativeSampleModule", "Failed to create GrDirectContext");
+      Logger::error(k_logTag, "Failed to create GrDirectContext");
       return false;
     }
   }
@@ -56,7 +56,7 @@ bool SkiaGanesh::setupSkiaSurface(int width, int height) {
     );
 
     if (!m_pSkiaSurface) {
-      __android_log_print(ANDROID_LOG_ERROR, "NativeSampleModule", "Failed to create SkSurface from backend render target");
+      Logger::error(k_logTag, "Failed to create SkSurface from backend render target");
       return false;
     }
   }

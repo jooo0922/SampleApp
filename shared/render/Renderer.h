@@ -59,4 +59,7 @@ private:
   std::atomic<bool> m_previewPlaying = false;           // 타임라인 재생 여부
   double m_previewTimeSec = 0.0;                        // 현재 타임라인 재생 시간(초) -> 렌더링 스레드에서 갱신
   double m_previewDurationSec = 0.0;                    // 타임라인 전체 길이(초) -> Renderer::setTimeline() 내에서 재계산
+
+private:
+  static constexpr const char* k_logTag = "Renderer";
 };

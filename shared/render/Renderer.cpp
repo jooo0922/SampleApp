@@ -1,5 +1,5 @@
 #include "Renderer.h"
-#include <android/log.h>  // 로그 출력을 위한 헤더
+#include "../logger/Logger.h"
 #include <chrono>
 
 void Renderer::start(ANativeWindow* pWindow) {
@@ -82,7 +82,7 @@ void Renderer::previewStop() {
 void Renderer::process() {
   // 렌더링 루프 진입 직전 EGL 초기화 수행
   if (!m_egl.init(m_pNativeWindow)) {
-    __android_log_print(ANDROID_LOG_ERROR, "Renderer", "EGL initialization failed");
+    Logger::error(k_logTag, "EGL initialization failed");
     return;
   }
 
@@ -90,7 +90,7 @@ void Renderer::process() {
   const int width = m_width.load();
   const int height = m_height.load();
   if (!m_skia.setupSkiaSurface(width, height)) {
-    __android_log_print(ANDROID_LOG_ERROR, "Renderer", "Failed to setup Skia surface");
+    Logger::error(k_logTag, "Failed to setup Skia surface");
     return;
   }
 
@@ -104,7 +104,7 @@ void Renderer::process() {
       const int width = m_width.load();
       const int height = m_height.load();
       if (!m_skia.setupSkiaSurface(width, height)) {
-        __android_log_print(ANDROID_LOG_ERROR, "Renderer", "Failed to recreate Skia surface in rendering loop");
+        Logger::error(k_logTag, "Failed to recreate Skia surface in rendering loop");
         continue;  // 혹은 break; 로 종료
       }
     }

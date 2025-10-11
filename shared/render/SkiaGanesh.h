@@ -25,4 +25,7 @@ private:
   // ganesh gpu 백엔드 관련 전역 객체 (skia 버전 스마트 포인터(std::shared_ptr 과 유사)로 관리)
   sk_sp<GrDirectContext> m_pGrContext;
   sk_sp<SkSurface> m_pSkiaSurface;
+
+private:
+  static constexpr const char* k_logTag = "SkiaGanesh";
 };

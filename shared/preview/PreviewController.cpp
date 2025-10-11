@@ -1,7 +1,7 @@
-#include "PreviewController.h"
-#include "render/Renderer.h"
-#include "video/Timeline.h"
-#include <android/log.h>
+#include "../preview/PreviewController.h"
+#include "../render/Renderer.h"
+#include "../video/Timeline.h"
+#include "../logger/Logger.h"
 #include <core/SkData.h>
 #include <core/SkImage.h>
 #include <core/SkRect.h>
@@ -12,7 +12,7 @@ PreviewController::PreviewController(std::shared_ptr<Renderer> renderer)
 bool PreviewController::setImageSequence(const std::vector<std::string>& paths, double clipDurSec, double xfadeSec) {
   // 1) 필수 체크: Renderer 준비 여부 확인
   if (!m_pRenderer) {
-    __android_log_print(ANDROID_LOG_ERROR, "PreviewController", "Renderer not set");
+    Logger::error(k_logTag, "Renderer not set");
     return false;
   }
 
@@ -24,7 +24,7 @@ bool PreviewController::setImageSequence(const std::vector<std::string>& paths, 
   for (const auto& p : paths) {
     sk_sp<SkData> data = SkData::MakeFromFileName(p.c_str());
     if (!data) {
-      __android_log_print(ANDROID_LOG_WARN, "PreviewController", "Read failed: %s", p.c_str());
+      Logger::warn(k_logTag, "Read failed: %s", p.c_str());
       continue; // 바이트 읽기 실패한 파일은 건너뜀.
     }
     sk_sp<SkImage> img = SkImages::DeferredFromEncodedData(std::move(data));
@@ -35,7 +35,7 @@ bool PreviewController::setImageSequence(const std::vector<std::string>& paths, 
 
   // SkImage 를 하나도 생성하지 못했다면 Timeline 생성 중단
   if (images.empty()) {
-    __android_log_print(ANDROID_LOG_WARN, "PreviewController", "No images loaded");
+    Logger::warn(k_logTag, "No images loaded");
     return false;
   }
 
@@ -58,7 +58,7 @@ bool PreviewController::setImageSequence(const std::vector<std::string>& paths, 
   //    - dst 위치/크기로 렌더되도록 설정
   auto timeline = Timeline::FromClipRenderData(renderDataList, clipDurSec, xfadeSec);
   if (!timeline) {
-    __android_log_print(ANDROID_LOG_WARN, "PreviewController", "Timeline creation failed");
+    Logger::warn(k_logTag, "Timeline creation failed");
     return false;
   }
 

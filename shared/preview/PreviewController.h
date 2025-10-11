@@ -21,4 +21,7 @@ public:
 private:
   std::shared_ptr<Renderer> m_pRenderer;
   double m_lastDurationSec = 0.0;
+
+private:
+  static constexpr const char* k_logTag = "PreviewController";
 };
