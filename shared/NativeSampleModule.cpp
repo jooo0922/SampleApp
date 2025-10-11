@@ -39,6 +39,34 @@ double NativeSampleModule::getTimelineDuration(jsi::Runtime &rt) {
   return Engine::instance().getTimelineDuration();
 };
 
+void NativeSampleModule::startEncoding(jsi::Runtime &rt, int width, int height, int fps, int bitrate, const std::string& mime,const std::string& outputPath) {
+  EncoderConfig config;
+  config.width = width;
+  config.height = height;
+  config.fps = fps;
+  config.bitrate = bitrate;
+  config.mime = mime;
+  config.outputPath = outputPath;
+
+  Engine::instance().startEncoding(config);
+}
+
+void NativeSampleModule::cancelEncoding(jsi::Runtime &rt) {
+  Engine::instance().cancelEncoding();
+}
+
+bool NativeSampleModule::isEncoding(jsi::Runtime &rt) {
+  return Engine::instance().isEncoding();
+}
+
+std::string NativeSampleModule::getLastEncodedPath(jsi::Runtime &rt) {
+  return Engine::instance().getLastEncodedPath();
+}
+
+double NativeSampleModule::getEncodingProgress(jsi::Runtime &rt) {
+  return Engine::instance().getEncodingProgress();
+}
+
 } // namespace facebook::react
 
 // JNI 함수 정의
