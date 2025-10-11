@@ -124,7 +124,17 @@ void Engine::startEncoding(const EncoderConfig& config) {
 };
 
 void Engine::cancelEncoding() {
+  // 인코딩 중이 아닐 때에는 취소 요청 무시
+  if (!m_isEncoding.load()) return;
 
+  // 인코딩 취소가 요청되었음을 로그 출력
+  Logger::info(k_logTag, "Encoding cancellation requested.");
+
+  // 인코딩 취소 플래그 설정 -> IEncoder::encodeBlocking() 의 인코딩 루프에서 주기적으로 체크하여 인코딩 중단 처리
+  m_cancelFlag.store(true);
+
+  // 인코딩 루프 중단 후 인코딩 스레드가 안전하게 종료될 때까지 대기
+  joinEncodeThread();
 };
 
 void Engine::joinEncodeThread() {
