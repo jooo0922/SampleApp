@@ -97,4 +97,7 @@ private:
   int m_outputFd = -1;                          // .mp4 출력 파일 디스크립터
 
   double m_durationSec = 0.0;                   // 타임라인 총 길이(초) 캐시(프레임 수 계산용)
+
+private:
+  static constexpr const char* k_logTag = "AndroidEncoder";
 };

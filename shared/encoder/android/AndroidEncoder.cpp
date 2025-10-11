@@ -46,7 +46,7 @@ bool AndroidEncoder::prepare(const EncoderConfig& cfg) {
 
   // 타임라인을 캡쳐해놨는지 확인 후 encoder 준비
   if (!m_pTimeline) {
-    Logger::error("AndroidEncoder", "Timeline not set");
+    Logger::error(k_logTag, "Timeline not set");
     return false;
   }
 
@@ -92,13 +92,13 @@ bool AndroidEncoder::encodeBlocking(std::atomic<bool>& cancelFlag, std::function
 
     // 현재 프레임 시간(t)에 해당하는 그림을 바인딩된 EGLSurface 에 그린다.
     if (!renderOneFrame(t)) {
-      Logger::error("AndroidEncoder", "renderOneFrame failed");
+      Logger::error(k_logTag, "renderOneFrame failed");
       return false;
     }
 
     // 현재 프레임이 그려진 결과물을 Codec 이 packet 으로 압축하면 그걸 꺼내서 mp4 컨테이너에 쓴다
     if (!drainEncoderAndMux(true)) {
-      Logger::error("AndroidEncoder", "drain running failed");
+      Logger::error(k_logTag, "drain running failed");
       return false;
     }
 
@@ -111,13 +111,13 @@ bool AndroidEncoder::encodeBlocking(std::atomic<bool>& cancelFlag, std::function
   // 프레임 루프를 탈출했으니 더 이상 인코딩할 프레임이 없음을 Codec 에 알리기 (EOS)
   media_status_t ms = AMediaCodec_signalEndOfInputStream(m_pCodec);
   if (ms != AMEDIA_OK) {
-    Logger::error("AndroidEncoder", "AMediaCodec_signalEndOfInputStream failed: %d", ms);
+    Logger::error(k_logTag, "AMediaCodec_signalEndOfInputStream failed: %d", ms);
     return false;
   }
 
   // 아직 꺼내지 못한 압축 packet 이 남아있으면 모두 꺼내서 mp4 컨테이너에 쓴다.
   if (!drainEncoderAndMux(true)) {
-    Logger::error("AndroidEncoder", "drain final failed");
+    Logger::error(k_logTag, "drain final failed");
     return false;
   }
 
@@ -175,7 +175,7 @@ bool AndroidEncoder::createCodecAndSurface() {
   m_pCodec = AMediaCodec_createEncoderByType(m_encoderConfig.mime.c_str());
   if (!m_pCodec) {
     // Codec 생성 실패 시, codec format 메모리 해제 후 실패 리턴
-    Logger::error("AndroidEncoder", "createCodecAndSurface failed: %s", m_encoderConfig.mime.c_str());
+    Logger::error(k_logTag, "createCodecAndSurface failed: %s", m_encoderConfig.mime.c_str());
     AMediaFormat_delete(fmt);
     return false;
   }
@@ -184,7 +184,7 @@ bool AndroidEncoder::createCodecAndSurface() {
   // (참고로 AMediaCodec 에서 "Codec" 이란 encoder/decoder 모드를 모두 포괄하는 추상화된 구현체이므로, 목적에 따라 Codec 모드를 설정해서 사용)
   media_status_t ms = AMediaCodec_configure(m_pCodec, fmt, nullptr, nullptr, AMEDIACODEC_CONFIGURE_FLAG_ENCODE);
   if (ms != AMEDIA_OK) {
-    Logger::error("AndroidEncoder", "AMediaCodec_configure failed: %d", ms);
+    Logger::error(k_logTag, "AMediaCodec_configure failed: %d", ms);
     return false;
   }
 
@@ -195,7 +195,7 @@ bool AndroidEncoder::createCodecAndSurface() {
    */
   ms = AMediaCodec_createInputSurface(m_pCodec, &m_pInputWindow);
   if (ms != AMEDIA_OK || !m_pInputWindow) {
-    Logger::error("AndroidEncoder", "AMediaCodec_createInputSurface failed: %d", ms);
+    Logger::error(k_logTag, "AMediaCodec_createInputSurface failed: %d", ms);
     return false;
   }
 
@@ -209,7 +209,7 @@ bool AndroidEncoder::startCodec() {
   media_status_t ms = AMediaCodec_start(m_pCodec);
   if (ms != AMEDIA_OK) {
     // 시작 실패에 대한 예외 처리
-    Logger::error("AndroidEncoder", "AMediaCodec_start failed: %d", ms);
+    Logger::error(k_logTag, "AMediaCodec_start failed: %d", ms);
     return false;
   }
   return true;
@@ -218,7 +218,7 @@ bool AndroidEncoder::startCodec() {
 bool AndroidEncoder::initEGL() {
   // AMediaCodec API 가 생성한 입력용 offscreen native surface 를 EGL 에서 사용할 수 있도록 초기화한다.
   if (!m_egl.init(m_pInputWindow)) {
-    Logger::error("AndroidEncoder", "EglContext::init failed");
+    Logger::error(k_logTag, "EglContext::init failed");
     return false;
   }
 
@@ -242,7 +242,7 @@ bool AndroidEncoder::initSkia() {
    * MediaCodec 인코더 입력으로 제출된다.
    */
   if (!m_skia.setupSkiaSurface(m_encoderConfig.width, m_encoderConfig.height)) {
-    Logger::error("AndroidEncoder", "SkiaGanesh::setupSkiaSurface failed");
+    Logger::error(k_logTag, "SkiaGanesh::setupSkiaSurface failed");
     return false;
   }
   return true;
@@ -271,14 +271,14 @@ bool AndroidEncoder::renderOneFrame(double tSec) {
 
   // 현재 인코딩 스레드에 생성된 EGLContext 바인딩된 상태에서만 렌더링
   if (!m_egl.makeCurrent()) {
-    Logger::error("AndroidEncoder", "EglContext::makeCurrent failed");
+    Logger::error(k_logTag, "EglContext::makeCurrent failed");
     return false;
   }
 
   // SkCanvas 포인터를 얻어와서 렌더링
   SkCanvas* canvas = m_skia.canvas();
   if (!canvas) {
-    Logger::error("AndroidEncoder", "SkiaGanesh::canvas is null");
+    Logger::error(k_logTag, "SkiaGanesh::canvas is null");
     return false;
   }
 
@@ -298,7 +298,7 @@ bool AndroidEncoder::renderOneFrame(double tSec) {
    * buffer swapping 시점에 Codec 에 입력 buffer queue 에 전달되어 인코딩 대기 상태가 된다.
    */
   if (!m_egl.swapBuffer()) {
-    Logger::error("AndroidEncoder", "EglContext::swapBuffer failed");
+    Logger::error(k_logTag, "EglContext::swapBuffer failed");
     return false;
   }
   return true;
@@ -365,14 +365,14 @@ bool AndroidEncoder::drainEncoderAndMux(bool endOfStream) {
       AMediaFormat_delete(ofmt);
 
       if (m_trackIndex < 0) {
-        Logger::error("AndroidEncoder", "AMediaMuxer_addTrack failed");
+        Logger::error(k_logTag, "AMediaMuxer_addTrack failed");
         return false;
       }
 
       // 생성된 비디오 트랙에 새 패킷들을 붙여넣을 수 있는 상태가 되도록 Muxer 시작 함수 호출
       media_status_t ms = AMediaMuxer_start(m_pMuxer);
       if (ms != AMEDIA_OK) {
-        Logger::error("AndroidEncoder", "AMediaMuxer_start failed: %d", ms);
+        Logger::error(k_logTag, "AMediaMuxer_start failed: %d", ms);
         return false;
       }
       m_muxerStarted = true;
@@ -421,7 +421,7 @@ bool AndroidEncoder::openMuxer() {
     0644                          // 해당 파일에 대한 사용자 계정별 권한을 8진수로 정의 (6: 소유자는 읽기/쓰기 허용, 4: 그룹 사용자는 읽기 허용, 4: 기타 사용자는 읽기 허용)
   );
   if (m_outputFd < 0) {
-    Logger::error("AndroidEncoder", "open output file failed: %s", m_encoderConfig.outputPath.c_str());
+    Logger::error(k_logTag, "open output file failed: %s", m_encoderConfig.outputPath.c_str());
     return false;
   }
 
@@ -430,7 +430,7 @@ bool AndroidEncoder::openMuxer() {
   m_pMuxer = AMediaMuxer_new(m_outputFd, AMEDIAMUXER_OUTPUT_FORMAT_MPEG_4);
   if (!m_pMuxer) {
     // Muxer 생성 실패 시, 생성된 파일 디스크립터 닫고 실패 리턴
-    Logger::error("AndroidEncoder", "AMediaMuxer_new failed");
+    Logger::error(k_logTag, "AMediaMuxer_new failed");
     ::close(m_outputFd);
     m_outputFd = -1;
     return false;
