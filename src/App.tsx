@@ -16,6 +16,7 @@ import {
 
 import ImageSequencePicker from '../src/components/ImageSequencePicker/ImageSequencePicker';
 import PreviewControls from '../src/components/PreviewControls/PreviewControls';
+import EncodingControls from '../src/components/EncodingControls/EncodingControls';
 
 const SkiaView = requireNativeComponent('SkiaView');
 
@@ -45,6 +46,8 @@ function App(): React.JSX.Element {
           durationSec={timelineDurationSec}
           hasTimeline={timelineReady}
         />
+
+        <EncodingControls hasTimeline={timelineReady} />
       </View>
     </SafeAreaView>
   );
@@ -66,11 +69,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   preview: {
-    flex: 7, // 7 : 3 비율 (위)
+    flex: 6, // 7 : 3 비율 (위)
     marginBottom: 16, // 영역 사이 간격 1rem
   },
   controls: {
-    flex: 2, // 7 : 3 비율 (아래)
+    flex: 3, // 7 : 3 비율 (아래)
     justifyContent: 'flex-start',
     gap: 8,
   },
