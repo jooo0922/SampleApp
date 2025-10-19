@@ -140,6 +140,32 @@ const styles = StyleSheet.create({
   btn: {
     flex: 1,
   },
+  progressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  progressBar: {
+    flex: 1,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#2f2f2f',
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#4caf50',
+  },
+  progressText: {
+    width: 40,
+    textAlign: 'right',
+    color: '#ccc',
+    fontSize: 12,
+  },
+  outputPath: {
+    color: '#888',
+    fontSize: 12,
+  },
 });
 
 export default EncodingControls;
