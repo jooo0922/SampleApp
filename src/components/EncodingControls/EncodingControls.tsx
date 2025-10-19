@@ -132,21 +132,27 @@ const EncodingControls: React.FC<Props> = ({hasTimeline}) => {
             disabled={!isEncoding}
           />
         </View>
-
-        <View style={styles.progressRow}>
-          <View style={styles.progressBar}>
-            <View
-              style={[
-                styles.progressFill,
-                {width: `${Math.round(progressPercent * 100)}%`},
-              ]}
-            />
-          </View>
-          <Text style={styles.progressText}>
-            {Math.round(progressPercent * 100)}%
-          </Text>
-        </View>
       </View>
+
+      <View style={styles.progressRow}>
+        <View style={styles.progressBar}>
+          <View
+            style={[
+              styles.progressFill,
+              {width: `${Math.round(progressPercent * 100)}%`},
+            ]}
+          />
+        </View>
+        <Text style={styles.progressText}>
+          {Math.round(progressPercent * 100)}%
+        </Text>
+      </View>
+
+      {lastOutputPath ? (
+        <Text numberOfLines={1} style={styles.outputPath}>
+          Last file: {lastOutputPath}
+        </Text>
+      ) : null}
     </View>
   );
 };
