@@ -123,6 +123,13 @@ const EncodingControls: React.FC<Props> = ({hasTimeline}) => {
             disabled={!hasTimeline || isEncoding}
           />
         </View>
+        <View style={styles.btn}>
+          <Button
+            title="Cancel Encoding"
+            onPress={handleCancelEncoding}
+            disabled={!isEncoding}
+          />
+        </View>
       </View>
     </View>
   );
