@@ -7,8 +7,9 @@ interface Props {
 }
 
 const DEFAULT_ENCODER_CONFIG = {
-  width: 1280,
-  height: 720,
+  // MediaCodec(특히 H.264 인코더)는 가로/세로 크기가 짝수 정규화(가급적 16의 배수)된 값을 요구함.
+  width: 1104,
+  height: 1440,
   fps: 30,
   bitrate: 4_000_000,
   mime: 'video/avc',
