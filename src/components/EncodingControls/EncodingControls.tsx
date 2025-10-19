@@ -37,7 +37,9 @@ const EncodingControls: React.FC<Props> = ({hasTimeline}) => {
 
   /** 인코딩 중일 때 200ms 간격으로 진행률 polling(일정 주기로 상태나 조건 물어보는 패턴) */
   useEffect(() => {
-    if (!isEncoding) return;
+    if (!isEncoding) {
+      return;
+    }
 
     const timer = setInterval(() => {
       try {
@@ -129,6 +131,20 @@ const EncodingControls: React.FC<Props> = ({hasTimeline}) => {
             onPress={handleCancelEncoding}
             disabled={!isEncoding}
           />
+        </View>
+
+        <View style={styles.progressRow}>
+          <View style={styles.progressBar}>
+            <View
+              style={[
+                styles.progressFill,
+                {width: `${Math.round(progressPercent * 100)}%`},
+              ]}
+            />
+          </View>
+          <Text style={styles.progressText}>
+            {Math.round(progressPercent * 100)}%
+          </Text>
         </View>
       </View>
     </View>
