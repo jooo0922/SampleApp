@@ -90,6 +90,8 @@ private:
   // EGL + Skia (Renderer 에서 쓰는 것과 공유하지 못하도록 Encoder 전용으로 사용)
   EglContext m_egl;                             // encoder 전용 EGL 컨텍스트(native 입력 Surface에 바인딩해서 GL/Skia로 그림을 그리기 위함)
   SkiaGanesh m_skia;                            // encoder 전용 Skia wrapper
+  bool m_eglInitialized = false;                // EGL 초기화 여부 플래그
+  bool m_skiaInitialized = false;               // Skia 초기화 여부 플래그
 
   AMediaMuxer* m_pMuxer = nullptr;              // Muxer(.mp4 컨테이너에 인코딩 결과 패키징)
   int m_trackIndex = -1;                        // 트랙 인덱스 (포맷 확정 후 설정)

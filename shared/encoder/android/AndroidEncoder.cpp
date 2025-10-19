@@ -59,10 +59,6 @@ bool AndroidEncoder::prepare(const EncoderConfig& cfg) {
   // 3) 코덱 시작
   if (!startCodec()) return false;
 
-  // 4) EGL/Skia 준비 (AMediaCodec native surface에 바인딩해서 GL/Skia로 그림을 그리기 위함)
-  if (!initEGL()) return false;
-  if (!initSkia()) return false;
-
   return true;
 };
 
@@ -71,6 +67,25 @@ bool AndroidEncoder::encodeBlocking(std::atomic<bool>& cancelFlag, std::function
 
   // prepare() 함수에서 준비되지 못한 객체가 있으면 encoding 안함.
   if (!m_pCodec || !m_pInputWindow || !m_pTimeline) return false;
+
+  // EGL/Skia 준비 (AMediaCodec native surface에 바인딩해서 GL/Skia로 그림을 그리기 위함)
+  /**
+   * EGL/Skia 초기화는 반드시 지금 실행 중인 인코딩 스레드에서 수행해야 한다.
+   * - EGLContext는 자신이 생성된 스레드에 묶이므로, prepare()에서(UI/JS 브리지 스레드) 만들어 두면
+   *   당연히 UI/JS 브리지 스레드에 묶이게 되고, encodeBlocking이 돌아가는 인코딩 스레드에서
+   *   eglMakeCurrent를 부를 때 EGL_BAD_ACCESS가 발생한다.
+   * - 따라서 prepare() 단계에서는 codec/muxer만 준비하고, Encoding Thread 에서 실행될
+   *   AndroidEncoder::encodeBlocking() 함수에 처음 진입했을 때 initEGL/initSkia를 호출한다.
+   *   성공하면 플래그(m_eglInitialized / m_skiaInitialized)를 세워 중복 초기화를 막는다.
+   */
+  if (!m_eglInitialized && !initEGL()) {
+    Logger::error(k_logTag, "EGL init failed on encoding thread");
+    return false;
+  }
+  if (!m_skiaInitialized && !initSkia()) {
+    Logger::error(k_logTag, "Skia init failed on encoding thread");
+    return false;
+  }
 
   // FPS, 한 프레임 길이, 전체 길이, 총 프레임 수 계산
   const int fps = std::max(1, m_encoderConfig.fps);                     // 최소 1fps 보장
@@ -97,7 +112,7 @@ bool AndroidEncoder::encodeBlocking(std::atomic<bool>& cancelFlag, std::function
     }
 
     // 현재 프레임이 그려진 결과물을 Codec 이 packet 으로 압축하면 그걸 꺼내서 mp4 컨테이너에 쓴다
-    if (!drainEncoderAndMux(true)) {
+    if (!drainEncoderAndMux(false)) {
       Logger::error(k_logTag, "drain running failed");
       return false;
     }
@@ -226,6 +241,7 @@ bool AndroidEncoder::initEGL() {
   if (!s_eglPresentationTimeANDROID) {
     s_eglPresentationTimeANDROID = (PFNEGLPRESENTATIONTIMEANDROIDPROC)eglGetProcAddress("eglPresentationTimeANDROID");
   }
+  m_eglInitialized = true;
 
   return true;
 };
@@ -245,17 +261,21 @@ bool AndroidEncoder::initSkia() {
     Logger::error(k_logTag, "SkiaGanesh::setupSkiaSurface failed");
     return false;
   }
+  m_skiaInitialized = true;
+
   return true;
 };
 
 void AndroidEncoder::destroyEGL() {
   // encoder 전용 EGL 자원 해제
   m_egl.destroy();
+  m_eglInitialized = false;
 };
 
 void AndroidEncoder::destroySkia() {
   // encoder 전용 skia 자원 해제
   m_skia.destroy();
+  m_skiaInitialized = false;
 };
 
 bool AndroidEncoder::renderOneFrame(double tSec) {
