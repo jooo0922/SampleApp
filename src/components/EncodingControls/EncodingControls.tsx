@@ -35,7 +35,7 @@ const EncodingControls: React.FC<Props> = ({hasTimeline}) => {
     }
   }, []);
 
-  /** 인코딩 중일 때 200ms 간격으로 진행률 polling */
+  /** 인코딩 중일 때 200ms 간격으로 진행률 polling(일정 주기로 상태나 조건 물어보는 패턴) */
   useEffect(() => {
     if (!isEncoding) return;
 
@@ -105,11 +105,23 @@ const EncodingControls: React.FC<Props> = ({hasTimeline}) => {
     }
   }, []);
 
+  /** 진행률 상태값 메모이제이션 */
+  const progressPercent = useMemo(() => {
+    // 네이티브 모듈에서 이상한 값(NaN, ±Infinity 등)이 들어올 가능성에 대비한 안전장치로 Number.isFinite 검사
+    const value = Number.isFinite(progress) ? progress : 0;
+    // 메모이제이션할 진행률 값을 [0, 1] 구간 내로 클램핑
+    return Math.min(1, Math.max(0, value));
+  }, [progress]);
+
   return (
     <View style={styles.container}>
       <View style={styles.row}>
         <View style={styles.btn}>
-          <Button title="Start Encoding" onPress={} disabled={!hasTimeline} />
+          <Button
+            title="Start Encoding"
+            onPress={handleStartEncoding}
+            disabled={!hasTimeline || isEncoding}
+          />
         </View>
       </View>
     </View>
